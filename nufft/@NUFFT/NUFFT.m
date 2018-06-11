@@ -40,10 +40,10 @@ end
 
 om = [real(k(:)), imag(k(:))]*2*pi;
 Nd = imSize;
-Jd = [4,4];
-Kd = floor(Nd*1.5);
+Jd = [5,5];
+Kd = floor(Nd*2);
 n_shift = Nd/2 + shift;
-res.st = nufft_init(om, Nd, Jd, Kd, n_shift, 'kaiser');
+res.st = nufft_init(om, Nd, Jd, Kd, n_shift);
 
 res.phase = phase;
 res.adjoint = 0;

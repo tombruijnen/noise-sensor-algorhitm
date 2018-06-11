@@ -47,5 +47,4 @@ else
 	img = reshape(img,sx*shape(1),sy*shape(2));
 end
 
-%imagesc(img,range); colormap(gray(256));axis('equal');
 imshow(img,range);

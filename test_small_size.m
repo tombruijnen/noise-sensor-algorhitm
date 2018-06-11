@@ -23,18 +23,42 @@ params.N=NUFFT(params.k,1,1,[200/2 182/2],[200 182],2);
 params.Idim=size(csm(:,:,1,:));
 params.Kdim=[numel(params.k) 1 1 12];
 
+load('csm290.mat')
+
+% Standard iterative sense
 for ro=1:size(kdata,1)
+
+niter=50;
+lambda=0.1;
 
 % Create coil operator
 params.S=S(csm(:,:,ro,:));
+params.TV=unified_TV([200 182 1 12],[0 0],lambda);
 
 % 4) Solve the inverse problem 
+% cgsense
 ops=optimset('Display','off');
 func=@(x,tr) itSense_2D(x,params,tr);
-[tmp,~,relres(ro)]=lsqr(func,matrix_to_vec(permute(kdata(ro,:,:,:),[2 3 1 4 ])),1E-08,10);
-itSense_img(:,:,ro)=reshape(tmp,[params.Idim(1:2)]);
+y=matrix_to_vec(permute(kdata(ro,:,:,:),[2 3 1 4 ]));
+[tmp,~,relres(ro)]=lsqr(func,y,1E-08,niter);
+cgsense(:,:,ro)=abs(reshape(tmp,[params.Idim(1:2)]));
+
+% Tychonov
+func=@(x,tr) regularized_iterative_sense(x,params,tr);
+y=[y ; zeros(prod(params.Idim(1:2)),1)];
+[tmp,~,relres(ro)]=lsqr(func,double(y),1E-15,niter);
+reg_cgsense(:,:,ro)=abs(reshape(tmp,[params.Idim(1:2)]));
+
+% forward
 sos_img(:,:,ro)=sos(params.N'*permute(kdata(ro,:,:,:),[2 3 1 4 ]));
+
+% display
 disp(['Recon = ',num2str(ro),'\',num2str(size(kdata,1))])
 m=10*ones(size(sos_img(:,:,1)));m(:,mask)=0;
-imshow3(cat(3,abs(sos_img(:,:,ro)),abs(itSense_img(:,:,ro)),m),[],[1 3])
+a1=sos_img(:,:,ro);
+a2=cgsense(:,:,ro);
+a3=reg_cgsense(:,:,ro);
+m=m/max(m(:));
+imshow3(cat(3,a1/max(a1(:)),a2/max(a2(:)),a3/max(a3(:)),m),[],[1 4])
 end
+
